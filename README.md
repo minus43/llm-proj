@@ -35,6 +35,12 @@ python3 ingest_crawled.py
 
 생성 파일:
 - `data/crawled_docs.jsonl` (정제 텍스트 + 출처 URL + 수집 시각)
+- `data/community_case_schema.json` (후기형 데이터 스키마 가이드)
+
+크롤링 품질 필터:
+- 광고성 키워드 포함 문서 제외
+- 후기성 키워드 점수(합격/불합격/점수/준비기간/하루시간 등) 낮은 문서 제외
+- 제목+요약 기반 중복 제거
 
 주의:
 - 각 사이트 `robots.txt`와 이용약관을 반드시 준수하세요.

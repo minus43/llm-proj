@@ -61,10 +61,18 @@ class RAGStore:
     def ingest_crawled_docs(self, docs: List[Dict[str, Any]]) -> int:
         ids, documents, metas, embs = [], [], [], []
         for d in docs:
+            sm = d.get("study_meta", {})
+            signals = d.get("signals", {})
             doc_text = (
                 f"시험:{d.get('exam', '미분류')} | "
                 f"제목:{d.get('title', '')} | "
-                f"본문:{d.get('text', '')[:4000]}"
+                f"요약:{d.get('summary', '')} | "
+                f"기준점수:{sm.get('baseline_score')} 목표점수:{sm.get('target_score')} | "
+                f"기간주:{sm.get('duration_weeks')} 하루시간:{sm.get('daily_hours')} 결과:{sm.get('result')} | "
+                f"신호(점수/기간/시간/결과):"
+                f"{signals.get('has_score')}/{signals.get('has_duration')}/"
+                f"{signals.get('has_study_hours')}/{signals.get('has_result')} | "
+                f"본문:{d.get('text', '')[:3000]}"
             )
             ids.append(d["id"])
             documents.append(doc_text)
@@ -75,6 +83,8 @@ class RAGStore:
                     "url": d.get("url", ""),
                     "collected_at": d.get("collected_at", ""),
                     "title": d.get("title", ""),
+                    "quality_score": d.get("quality", {}).get("quality_score"),
+                    "result": sm.get("result"),
                 }
             )
             embs.append(self._embed(doc_text))

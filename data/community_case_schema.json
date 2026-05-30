@@ -1,0 +1,28 @@
+{
+  "id": "string (unique)",
+  "exam": "string",
+  "source_type": "community|blog|official|news",
+  "title": "string",
+  "url": "string",
+  "collected_at": "ISO-8601 datetime",
+  "text": "string (cleaned)",
+  "summary": "string",
+  "signals": {
+    "has_score": "boolean",
+    "has_duration": "boolean",
+    "has_study_hours": "boolean",
+    "has_result": "boolean"
+  },
+  "study_meta": {
+    "baseline_score": "number|null",
+    "target_score": "number|null",
+    "duration_weeks": "number|null",
+    "daily_hours": "number|null",
+    "result": "pass|fail|unknown"
+  },
+  "quality": {
+    "is_ad_like": "boolean",
+    "is_duplicate": "boolean",
+    "quality_score": "0~1"
+  }
+}

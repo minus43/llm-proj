@@ -100,6 +100,12 @@ def discover_links(base_url: str, html: str) -> List[str]:
         href = urljoin(base_url, a["href"])
         if href.startswith("http") and same_host(base_url, href):
             links.append(href.split("#")[0])
+    # Fallback for JS-heavy pages (e.g., tistory search) where post URLs are embedded in scripts.
+    script_urls = re.findall(r'https?://[^"\'<>\s]+', html)
+    for raw in script_urls:
+        href = raw.replace("\\/", "/").replace("\\", "")
+        if href.startswith("http") and same_host(base_url, href):
+            links.append(href.split("#")[0])
     return list(dict.fromkeys(links))
 
 
@@ -218,8 +224,15 @@ def dedupe_cases(cases: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
 
 
 def crawl_seed(seed: Seed) -> Iterable[Dict[str, Any]]:
+    robots_cache: Dict[str, RobotFileParser] = {}
+
+    def get_rp(u: str) -> RobotFileParser:
+        host = urlparse(u).netloc.lower()
+        if host not in robots_cache:
+            robots_cache[host] = robots_parser(u)
+        return robots_cache[host]
+
     for seed_url in seed.urls:
-        rp = robots_parser(seed_url)
         queue = [seed_url]
         visited = set()
 
@@ -229,7 +242,8 @@ def crawl_seed(seed: Seed) -> Iterable[Dict[str, Any]]:
                 continue
             visited.add(url)
 
-            if not allowed(url, rp):
+            # Check robots per host (important when jumping from tistory.com search to *.tistory.com blogs).
+            if not allowed(url, get_rp(url)):
                 continue
 
             try:

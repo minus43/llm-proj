@@ -26,6 +26,13 @@
   <div class="wrap">
     <section class="card">
       <h1>{{ inp.exam_name }} 결과</h1>
+      <p>입력한 일정 표현: <strong>{{ raw_exam_date_text }}</strong></p>
+      <p>해석된 시험일: <strong>{{ inp.exam_date.strftime("%Y-%m-%d") }}</strong></p>
+      {% if date_confidence == "low" %}
+      <p class="warn">일정 해석이 애매해서 임시값으로 계산했어. 날짜를 구체적으로 다시 입력해줘.</p>
+      {% elif date_confidence == "medium" %}
+      <p class="warn">상대 날짜 표현으로 해석했어. 의도한 날짜와 맞는지 확인해줘.</p>
+      {% endif %}
       <p>남은 일수: <strong>{{ out.days_left }}일</strong></p>
       <p>미루기 상태: <strong>{{ out.delay_status_text }}</strong></p>
       <p>권장 모드: <strong>{{ out.urgency_mode }}</strong></p>

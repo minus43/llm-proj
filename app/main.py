@@ -6,6 +6,7 @@ from typing import Dict, Any
 from datetime import timedelta
 
 import requests
+import dateparser
 from requests.exceptions import Timeout, RequestException
 from flask import Flask, render_template, request
 
@@ -73,43 +74,54 @@ def _first_number(text: str) -> float | None:
         return None
 
 
-def parse_exam_date(text: str, today: date) -> date:
+def parse_exam_date(text: str, today: date) -> tuple[date, str]:
     t = (text or "").strip()
     low = t.lower()
 
     # Natural-language fast path
     if "오늘" in t:
-        return today
+        return today, "high"
     if "내일" in t:
-        return today + timedelta(days=1)
+        return today + timedelta(days=1), "high"
     if "모레" in t:
-        return today + timedelta(days=2)
+        return today + timedelta(days=2), "high"
     if "글피" in t:
-        return today + timedelta(days=3)
+        return today + timedelta(days=3), "high"
 
     try:
-        return datetime.strptime(t, "%Y-%m-%d").date()
+        return datetime.strptime(t, "%Y-%m-%d").date(), "high"
     except ValueError:
         pass
 
     num = _first_number(low)
     if num is not None:
         if "일" in low and "뒤" in low:
-            return today + timedelta(days=int(num))
+            return today + timedelta(days=int(num)), "high"
         if "주" in low and "뒤" in low:
-            return today + timedelta(days=int(num * 7))
+            return today + timedelta(days=int(num * 7)), "high"
         if ("달" in low or "개월" in low) and "뒤" in low:
-            return today + timedelta(days=int(num * 30))
+            return today + timedelta(days=int(num * 30)), "medium"
 
     if "다음주" in t:
-        return today + timedelta(days=7)
+        return today + timedelta(days=7), "medium"
     if "이번주" in t:
-        return today + timedelta(days=4)
+        return today + timedelta(days=4), "medium"
     if "다음달" in t:
-        return today + timedelta(days=30)
+        return today + timedelta(days=30), "medium"
+
+    parsed = dateparser.parse(
+        t,
+        languages=["ko", "en"],
+        settings={
+            "PREFER_DATES_FROM": "future",
+            "RELATIVE_BASE": datetime.combine(today, datetime.min.time()),
+        },
+    )
+    if parsed:
+        return parsed.date(), "medium"
 
     # Safe default when date expression is unclear.
-    return today + timedelta(days=30)
+    return today + timedelta(days=30), "low"
 
 
 def parse_baseline_score(text: str) -> float:
@@ -197,7 +209,7 @@ def index():
 def analyze():
     exam_name = request.form["exam_name"]
     today = date.today()
-    exam_date = parse_exam_date(request.form["exam_date"], today)
+    exam_date, date_confidence = parse_exam_date(request.form["exam_date"], today)
 
     baseline_score = parse_baseline_score(request.form["baseline_score"])
     target_score = parse_target_score(request.form["target_score"], baseline_score)
@@ -239,6 +251,8 @@ def analyze():
         out=out,
         similar=similar,
         advice=advice,
+        raw_exam_date_text=request.form["exam_date"],
+        date_confidence=date_confidence,
     )
 
 

@@ -33,6 +33,21 @@ REVIEW_HINTS = [
 ]
 RESULT_PASS_HINTS = ["합격", "붙", "통과"]
 RESULT_FAIL_HINTS = ["불합격", "떨어", "탈락"]
+EXAM_ALIASES: Dict[str, List[str]] = {
+    "TOEIC": ["toeic", "토익"],
+    "TOEIC Speaking": ["toeic speaking", "toeicspeaking", "토익스피킹", "토스"],
+    "OPIc": ["opic", "오픽"],
+    "TEPS": ["teps", "텝스"],
+    "IELTS": ["ielts", "아이엘츠"],
+    "TOEFL": ["toefl", "토플"],
+    "JLPT": ["jlpt", "일본어능력시험"],
+    "JPT": ["jpt"],
+    "HSK": ["hsk"],
+    "GTQ 1급": ["gtq", "gtq 1급"],
+    "ACA": ["aca", "adobe certified associate"],
+    "ADsP": ["adsp"],
+    "SQLD": ["sqld"],
+}
 
 
 @dataclass
@@ -160,6 +175,15 @@ def review_relevance_score(text: str) -> float:
     return min(score * 2.2, 1.0)
 
 
+def exam_relevance(seed_exam: str, title: str, text: str) -> bool:
+    pool = (title + " " + text).lower()
+    aliases = EXAM_ALIASES.get(seed_exam, [])
+    raw = seed_exam.lower()
+    tokens = [t for t in re.split(r"[\s/()\-]+", raw) if len(t) >= 2]
+    keys = list(dict.fromkeys([raw] + aliases + tokens))
+    return any(k in pool for k in keys)
+
+
 def extract_study_meta(text: str) -> Dict[str, Any]:
     t = text
 
@@ -238,7 +262,7 @@ def dedupe_cases(cases: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     seen = set()
     out = []
     for c in cases:
-        sig = hashlib.sha1((c["title"] + "|" + c["summary"]).encode("utf-8")).hexdigest()
+        sig = hashlib.sha1((c["exam"] + "|" + c["title"] + "|" + c["summary"]).encode("utf-8")).hexdigest()
         if sig in seen:
             c["quality"]["is_duplicate"] = True
             continue

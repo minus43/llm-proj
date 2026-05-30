@@ -75,12 +75,23 @@ def _first_number(text: str) -> float | None:
 
 def parse_exam_date(text: str, today: date) -> date:
     t = (text or "").strip()
+    low = t.lower()
+
+    # Natural-language fast path
+    if "오늘" in t:
+        return today
+    if "내일" in t:
+        return today + timedelta(days=1)
+    if "모레" in t:
+        return today + timedelta(days=2)
+    if "글피" in t:
+        return today + timedelta(days=3)
+
     try:
         return datetime.strptime(t, "%Y-%m-%d").date()
     except ValueError:
         pass
 
-    low = t.lower()
     num = _first_number(low)
     if num is not None:
         if "일" in low and "뒤" in low:

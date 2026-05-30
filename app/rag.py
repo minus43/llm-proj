@@ -13,6 +13,23 @@ OLLAMA_HOST = "http://localhost:11434"
 EMBED_MODEL = "nomic-embed-text"
 COLLECTION_NAME = "exam_cases"
 EMBED_TIMEOUT_SEC = int(os.getenv("OLLAMA_EMBED_TIMEOUT_SEC", "90"))
+EXAM_ALIASES = {
+    "TOEIC": ["TOEIC", "토익"],
+    "TOEIC Speaking": ["TOEIC Speaking", "토익스피킹", "토스"],
+    "OPIc": ["OPIc", "오픽"],
+    "TEPS": ["TEPS", "텝스"],
+    "IELTS": ["IELTS", "아이엘츠"],
+    "TOEFL": ["TOEFL", "토플"],
+    "JLPT": ["JLPT", "JLPT N2", "일본어능력시험"],
+    "JPT": ["JPT"],
+    "HSK": ["HSK"],
+    "한국사능력검정시험": ["한국사능력검정시험", "한국사능력검정", "한능검"],
+    "컴퓨터활용능력 1급": ["컴퓨터활용능력 1급", "컴활 1급"],
+    "컴퓨터활용능력 2급": ["컴퓨터활용능력 2급", "컴활 2급"],
+    "정보처리기사": ["정보처리기사", "정처기"],
+    "SQLD": ["SQLD"],
+    "ADsP": ["ADsP"],
+}
 
 
 class RAGStore:
@@ -101,7 +118,21 @@ class RAGStore:
     def retrieve_similar(self, exam: str, baseline: float, target: float, top_k: int = 3) -> List[Dict[str, Any]]:
         query = f"시험:{exam} 현재:{baseline} 목표:{target} 유사 준비 사례"
         q_emb = self._embed(query)
-        out = self.collection.query(query_embeddings=[q_emb], n_results=top_k)
+        exam_candidates = self._exam_candidates(exam)
+        out = None
+        # Prefer exam-filtered retrieval first for more relevant results.
+        try:
+            out = self.collection.query(
+                query_embeddings=[q_emb],
+                n_results=top_k,
+                where={"exam": {"$in": exam_candidates}},
+            )
+        except Exception:
+            out = None
+
+        # Fallback when filtered results are empty or filter is unsupported.
+        if not out or not out.get("ids") or not out["ids"][0]:
+            out = self.collection.query(query_embeddings=[q_emb], n_results=top_k)
 
         results = []
         for i in range(len(out["ids"][0])):
@@ -114,3 +145,14 @@ class RAGStore:
                 }
             )
         return results
+
+    @staticmethod
+    def _exam_candidates(exam: str) -> List[str]:
+        normalized = exam.strip()
+        cands = {normalized}
+        for canonical, aliases in EXAM_ALIASES.items():
+            lower_aliases = [a.lower() for a in aliases]
+            if normalized.lower() in lower_aliases or canonical.lower() in normalized.lower():
+                cands.add(canonical)
+                cands.update(aliases)
+        return list(cands)

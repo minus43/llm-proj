@@ -43,6 +43,23 @@ EXAM_ALIASES: Dict[str, List[str]] = {
     "JLPT": ["jlpt", "일본어능력시험"],
     "JPT": ["jpt"],
     "HSK": ["hsk"],
+    "한국사능력검정시험": ["한국사능력검정시험", "한국사능력검정", "한능검"],
+    "컴퓨터활용능력 1급": ["컴퓨터활용능력 1급", "컴활 1급"],
+    "컴퓨터활용능력 2급": ["컴퓨터활용능력 2급", "컴활 2급"],
+    "정보처리기사": ["정보처리기사", "정처기"],
+    "SQLD": ["sqld"],
+    "ADsP": ["adsp"],
+}
+EXAM_ALIASES: Dict[str, List[str]] = {
+    "TOEIC": ["toeic", "토익"],
+    "TOEIC Speaking": ["toeic speaking", "toeicspeaking", "토익스피킹", "토스"],
+    "OPIc": ["opic", "오픽"],
+    "TEPS": ["teps", "텝스"],
+    "IELTS": ["ielts", "아이엘츠"],
+    "TOEFL": ["toefl", "토플"],
+    "JLPT": ["jlpt", "일본어능력시험"],
+    "JPT": ["jpt"],
+    "HSK": ["hsk"],
     "GTQ 1급": ["gtq", "gtq 1급"],
     "ACA": ["aca", "adobe certified associate"],
     "ADsP": ["adsp"],
@@ -173,6 +190,15 @@ def review_relevance_score(text: str) -> float:
     hits = sum(1 for k in REVIEW_HINTS if k.lower() in t)
     score = hits / max(len(REVIEW_HINTS), 1)
     return min(score * 2.2, 1.0)
+
+
+def exam_relevance(seed_exam: str, title: str, text: str) -> bool:
+    pool = (title + " " + text).lower()
+    aliases = EXAM_ALIASES.get(seed_exam, [])
+    raw = seed_exam.lower()
+    tokens = [t for t in re.split(r"[\s/()\-]+", raw) if len(t) >= 2]
+    keys = list(dict.fromkeys([raw] + aliases + tokens))
+    return any(k in pool for k in keys)
 
 
 def exam_relevance(seed_exam: str, title: str, text: str) -> bool:

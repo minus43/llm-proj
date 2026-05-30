@@ -43,28 +43,15 @@ EXAM_ALIASES: Dict[str, List[str]] = {
     "JLPT": ["jlpt", "일본어능력시험"],
     "JPT": ["jpt"],
     "HSK": ["hsk"],
-    "한국사능력검정시험": ["한국사능력검정시험", "한국사능력검정", "한능검"],
-    "컴퓨터활용능력 1급": ["컴퓨터활용능력 1급", "컴활 1급"],
-    "컴퓨터활용능력 2급": ["컴퓨터활용능력 2급", "컴활 2급"],
-    "정보처리기사": ["정보처리기사", "정처기"],
-    "SQLD": ["sqld"],
-    "ADsP": ["adsp"],
-}
-EXAM_ALIASES: Dict[str, List[str]] = {
-    "TOEIC": ["toeic", "토익"],
-    "TOEIC Speaking": ["toeic speaking", "toeicspeaking", "토익스피킹", "토스"],
-    "OPIc": ["opic", "오픽"],
-    "TEPS": ["teps", "텝스"],
-    "IELTS": ["ielts", "아이엘츠"],
-    "TOEFL": ["toefl", "토플"],
-    "JLPT": ["jlpt", "일본어능력시험"],
-    "JPT": ["jpt"],
-    "HSK": ["hsk"],
     "GTQ 1급": ["gtq", "gtq 1급"],
     "ACA": ["aca", "adobe certified associate"],
     "ADsP": ["adsp"],
     "SQLD": ["sqld"],
 }
+OFFTOPIC_KEYWORDS = [
+    "리빙템", "살림", "주방", "청소", "인테리어", "맛집", "다이어트",
+    "육아", "연애", "패션", "화장품", "건강식품",
+]
 
 
 @dataclass
@@ -201,13 +188,9 @@ def exam_relevance(seed_exam: str, title: str, text: str) -> bool:
     return any(k in pool for k in keys)
 
 
-def exam_relevance(seed_exam: str, title: str, text: str) -> bool:
+def is_offtopic(text: str, title: str) -> bool:
     pool = (title + " " + text).lower()
-    aliases = EXAM_ALIASES.get(seed_exam, [])
-    raw = seed_exam.lower()
-    tokens = [t for t in re.split(r"[\s/()\-]+", raw) if len(t) >= 2]
-    keys = list(dict.fromkeys([raw] + aliases + tokens))
-    return any(k in pool for k in keys)
+    return any(k in pool for k in OFFTOPIC_KEYWORDS)
 
 
 def extract_study_meta(text: str) -> Dict[str, Any]:
@@ -342,6 +325,7 @@ def crawl_seed(seed: Seed) -> Iterable[Dict[str, Any]]:
                 if (
                     (not case["quality"]["is_ad_like"])
                     and case["quality"]["quality_score"] >= 0.12
+                    and (not is_offtopic(text, title))
                 ):
                     yield case
                     collected += 1

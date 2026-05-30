@@ -136,7 +136,7 @@ class RAGStore:
 
         results = []
         for i in range(len(out["ids"][0])):
-            results.append(
+            row = (
                 {
                     "id": out["ids"][0][i],
                     "document": out["documents"][0][i],
@@ -144,7 +144,26 @@ class RAGStore:
                     "distance": out["distances"][0][i] if "distances" in out else None,
                 }
             )
-        return results
+            if self._is_low_quality(row):
+                continue
+            results.append(row)
+
+        # If filtering removed too many docs, backfill with raw candidates.
+        if len(results) < top_k:
+            for i in range(len(out["ids"][0])):
+                row = {
+                    "id": out["ids"][0][i],
+                    "document": out["documents"][0][i],
+                    "metadata": out["metadatas"][0][i],
+                    "distance": out["distances"][0][i] if "distances" in out else None,
+                }
+                if self._is_low_quality(row):
+                    continue
+                if row["id"] not in {r["id"] for r in results}:
+                    results.append(row)
+                if len(results) >= top_k:
+                    break
+        return results[:top_k]
 
     @staticmethod
     def _exam_candidates(exam: str) -> List[str]:
@@ -156,3 +175,22 @@ class RAGStore:
                 cands.add(canonical)
                 cands.update(aliases)
         return list(cands)
+
+    @staticmethod
+    def _is_low_quality(row: Dict[str, Any]) -> bool:
+        md = row.get("metadata") or {}
+        doc = (row.get("document") or "").lower()
+        if md.get("source_type") != "crawl":
+            return False
+
+        # Hard drop obvious non-study/lifestyle noise.
+        off_topic = ["리빙템", "맛집", "인테리어", "다이어트", "화장품", "살림", "주방"]
+        if any(k in doc for k in [x.lower() for x in off_topic]):
+            return True
+
+        # Keep crawl docs only when there is some study-signal language.
+        study_signals = ["합격", "불합격", "점수", "기출", "오답", "준비기간", "독학", "모의고사", "공부법"]
+        if not any(k in doc for k in [x.lower() for x in study_signals]):
+            return True
+
+        return False

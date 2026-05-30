@@ -2,21 +2,25 @@
   {
     "exam": "TOEIC",
     "urls": [
-      "https://www.toeic.co.kr/",
-      "https://www.toeic.co.kr/toeic/guide/contents.php"
+      "https://www.tistory.com/search?keyword=%ED%86%A0%EC%9D%B5%20%ED%9B%84%EA%B8%B0",
+      "https://www.tistory.com/search?keyword=%ED%86%A0%EC%9D%B5%20%EA%B3%B5%EB%B6%80%EB%B2%95",
+      "https://www.tistory.com/search?keyword=%ED%86%A0%EC%9D%B5%20%EB%B2%BC%EB%9D%BD%EC%B9%98%EA%B8%B0"
     ]
   },
   {
     "exam": "JLPT N2",
     "urls": [
-      "https://www.jlpt.jp/",
-      "https://www.jlpt.jp/e/guideline/results.html"
+      "https://www.tistory.com/search?keyword=JLPT%20N2%20%ED%9B%84%EA%B8%B0",
+      "https://www.tistory.com/search?keyword=JLPT%20N2%20%EA%B3%B5%EB%B6%80%EB%B2%95",
+      "https://www.tistory.com/search?keyword=JLPT%20N2%20%EB%8F%85%ED%95%99"
     ]
   },
   {
     "exam": "한국사능력검정",
     "urls": [
-      "https://www.historyexam.go.kr/"
+      "https://www.tistory.com/search?keyword=%ED%95%9C%EA%B5%AD%EC%82%AC%EB%8A%A5%EB%A0%A5%EA%B2%80%EC%A0%95%20%ED%9B%84%EA%B8%B0",
+      "https://www.tistory.com/search?keyword=%ED%95%9C%EB%8A%A5%EA%B2%80%20%EA%B3%B5%EB%B6%80%EB%B2%95",
+      "https://www.tistory.com/search?keyword=%ED%95%9C%EA%B5%AD%EC%82%AC%20%EB%B2%BC%EB%9D%BD%EC%B9%98%EA%B8%B0"
     ]
   }
 ]

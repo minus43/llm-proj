@@ -65,7 +65,14 @@ def allowed(url: str, rp: RobotFileParser) -> bool:
 
 
 def same_host(base: str, href: str) -> bool:
-    return urlparse(base).netloc == urlparse(href).netloc
+    base_host = urlparse(base).netloc.lower()
+    href_host = urlparse(href).netloc.lower()
+    if base_host == href_host:
+        return True
+    # Allow traversing across tistory family hosts from tistory search seed pages.
+    if "tistory.com" in base_host and "tistory.com" in href_host:
+        return True
+    return False
 
 
 def normalize_text(text: str) -> str:
@@ -94,6 +101,16 @@ def discover_links(base_url: str, html: str) -> List[str]:
         if href.startswith("http") and same_host(base_url, href):
             links.append(href.split("#")[0])
     return list(dict.fromkeys(links))
+
+
+def is_candidate_article_url(url: str) -> bool:
+    u = url.lower()
+    # Prefer likely article pages; skip obvious non-content sections.
+    if any(x in u for x in ["/manage", "/category", "/tag", "/guestbook", "/toolbar"]):
+        return False
+    if "tistory.com" in urlparse(url).netloc.lower():
+        return ("/entry/" in u) or re.search(r"/\\d+$", u) is not None
+    return True
 
 
 def stable_id(exam: str, url: str) -> str:
@@ -232,7 +249,9 @@ def crawl_seed(seed: Seed) -> Iterable[Dict[str, Any]]:
                 if (not case["quality"]["is_ad_like"]) and case["quality"]["quality_score"] >= 0.12:
                     yield case
 
-            for link in discover_links(url, resp.text)[:20]:
+            for link in discover_links(url, resp.text)[:30]:
+                if not is_candidate_article_url(link):
+                    continue
                 if link not in visited and link not in queue:
                     queue.append(link)
 

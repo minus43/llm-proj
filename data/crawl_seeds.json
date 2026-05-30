@@ -1,0 +1,22 @@
+[
+  {
+    "exam": "TOEIC",
+    "urls": [
+      "https://www.toeic.co.kr/",
+      "https://www.toeic.co.kr/toeic/guide/contents.php"
+    ]
+  },
+  {
+    "exam": "JLPT N2",
+    "urls": [
+      "https://www.jlpt.jp/",
+      "https://www.jlpt.jp/e/guideline/results.html"
+    ]
+  },
+  {
+    "exam": "한국사능력검정",
+    "urls": [
+      "https://www.historyexam.go.kr/"
+    ]
+  }
+]

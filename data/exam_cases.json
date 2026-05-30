@@ -1,0 +1,62 @@
+[
+  {
+    "id": "toeic_basic_1",
+    "exam": "TOEIC",
+    "level": "초급",
+    "baseline_score": 450,
+    "target_score": 700,
+    "recommended_weeks": 10,
+    "weekly_hours": 14,
+    "notes": "어휘와 파트별 스킬이 부족한 경우. 주 14시간 기준으로 10주 이상 권장."
+  },
+  {
+    "id": "toeic_mid_1",
+    "exam": "TOEIC",
+    "level": "중급",
+    "baseline_score": 620,
+    "target_score": 850,
+    "recommended_weeks": 8,
+    "weekly_hours": 16,
+    "notes": "LC는 안정적이나 RC 속도가 부족한 케이스. 실전 모의고사 2회/주 추천."
+  },
+  {
+    "id": "jlpt_n2_1",
+    "exam": "JLPT N2",
+    "level": "초중급",
+    "baseline_score": 0,
+    "target_score": 100,
+    "recommended_weeks": 14,
+    "weekly_hours": 12,
+    "notes": "문법/독해 누적이 중요. 단기 벼락치기 시 독해 파트 리스크가 큼."
+  },
+  {
+    "id": "korean_history_1",
+    "exam": "한국사능력검정",
+    "level": "중급",
+    "baseline_score": 55,
+    "target_score": 80,
+    "recommended_weeks": 6,
+    "weekly_hours": 10,
+    "notes": "기출 반복 효율이 높아 단기 압축이 가능하지만 사료 문제 대비가 필요."
+  },
+  {
+    "id": "csat_math_mock_1",
+    "exam": "수능 수학(모의)",
+    "level": "중상",
+    "baseline_score": 3,
+    "target_score": 1,
+    "recommended_weeks": 12,
+    "weekly_hours": 18,
+    "notes": "실수 패턴 교정과 고난도 접근 연습이 필요. 수면 부족 시 성과 하락 폭이 큼."
+  },
+  {
+    "id": "civil_service_9_1",
+    "exam": "9급 공무원",
+    "level": "입문",
+    "baseline_score": 0,
+    "target_score": 75,
+    "recommended_weeks": 24,
+    "weekly_hours": 25,
+    "notes": "과목 수가 많아 누적형 학습 필요. 벼락치기 효율이 가장 낮은 축에 속함."
+  }
+]

@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>분석 결과</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: "Pretendard", "Noto Sans KR", sans-serif;
+      background: #f6f7fb;
+      color: #1f2937;
+      padding: 20px;
+    }
+    .wrap { max-width: 900px; margin: 0 auto; display: grid; gap: 14px; }
+    .card { background: #fff; border-radius: 14px; padding: 16px; border: 1px solid #e7e7e7; }
+    .danger { color: #b91c1c; font-weight: 800; }
+    .warn { color: #b45309; font-weight: 800; }
+    .safe { color: #047857; font-weight: 800; }
+    h1, h2 { margin-top: 0; }
+    ul { margin: 8px 0; padding-left: 18px; }
+    a { color: #0f766e; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="card">
+      <h1>{{ inp.exam_name }} 결과</h1>
+      <p>남은 일수: <strong>{{ out.days_left }}일</strong></p>
+      <p>미루기 상태: <strong>{{ out.delay_status_text }}</strong></p>
+      <p>권장 모드: <strong>{{ out.urgency_mode }}</strong></p>
+      <p>리스크: 
+        {% if out.risk_level == '위험' %}<span class="danger">위험</span>
+        {% elif out.risk_level == '주의' %}<span class="warn">주의</span>
+        {% else %}<span class="safe">안전</span>{% endif %}
+      </p>
+      <p>예상 합격 확률 구간: <strong>{{ out.pass_probability_band }}</strong></p>
+      <p>요구 학습량(단위): {{ out.required_work_units }}, 일일 처리량(단위): {{ out.daily_capacity_units }}, 버퍼: {{ out.buffer_days }}일</p>
+    </section>
+
+    <section class="card">
+      <h2>벼락치기 실행 플랜</h2>
+      <ul>
+        {% for x in out.plan %}
+        <li><strong>{{ x.day }}</strong>: {{ x.todo }}</li>
+        {% endfor %}
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2>유사 사례(RAG)</h2>
+      <ul>
+        {% for s in similar %}
+        <li>{{ s.document }}</li>
+        {% endfor %}
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2>LLM 코치 코멘트</h2>
+      <pre style="white-space: pre-wrap; font-family: inherit; margin: 0;">{{ advice }}</pre>
+    </section>
+
+    <section class="card">
+      <a href="/">다시 계산하기</a>
+    </section>
+  </div>
+</body>
+</html>

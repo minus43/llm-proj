@@ -6,111 +6,246 @@
   <title>벼락치기 한계 계산기</title>
   <style>
     :root {
-      --bg1: #f7efe3;
-      --bg2: #d9e7f5;
-      --ink: #202225;
+      --bg-a: #f8f3ea;
+      --bg-b: #e2eef9;
+      --ink: #1f2937;
       --brand: #0f766e;
-      --card: #ffffffcc;
-      --warn: #d97706;
-      --danger: #b91c1c;
+      --brand-2: #115e59;
+      --card: #ffffffd9;
+      --line: #d7dde4;
+      --assistant: #eef6ff;
+      --user: #e9f9f0;
     }
+    * { box-sizing: border-box; }
     body {
       margin: 0;
+      min-height: 100vh;
       font-family: "Pretendard", "Noto Sans KR", sans-serif;
       color: var(--ink);
-      background: radial-gradient(circle at 20% 20%, var(--bg1), transparent 55%), radial-gradient(circle at 80% 0%, var(--bg2), transparent 40%), #f4f4f0;
-      min-height: 100vh;
+      background:
+        radial-gradient(circle at 10% 10%, var(--bg-a), transparent 45%),
+        radial-gradient(circle at 90% 0%, var(--bg-b), transparent 40%),
+        #f2f5f7;
       display: grid;
       place-items: center;
-      padding: 20px;
+      padding: 16px;
     }
-    .card {
+    .shell {
       width: min(860px, 100%);
       background: var(--card);
-      backdrop-filter: blur(4px);
-      border: 1px solid #ffffff;
-      border-radius: 20px;
-      padding: 22px;
-      box-shadow: 0 16px 34px #00000012;
+      border: 1px solid #fff;
+      border-radius: 22px;
+      box-shadow: 0 16px 30px #00000014;
+      overflow: hidden;
     }
-    h1 { margin: 0 0 4px; }
-    p { margin: 0 0 16px; }
-    form {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
+    .head {
+      padding: 18px 18px 12px;
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(180deg, #ffffffcc 0%, #ffffff80 100%);
     }
-    label { font-size: 14px; font-weight: 600; }
-    input, select, button {
-      margin-top: 6px;
-      width: 100%;
-      padding: 11px;
-      border-radius: 10px;
-      border: 1px solid #d6d6d6;
+    .title {
+      margin: 0;
+      font-size: 22px;
+      font-weight: 800;
+    }
+    .sub {
+      margin: 6px 0 0;
+      color: #4b5563;
       font-size: 14px;
-      box-sizing: border-box;
     }
-    .full { grid-column: 1 / -1; }
+    .chat {
+      padding: 14px;
+      height: min(62vh, 620px);
+      overflow: auto;
+      display: grid;
+      gap: 10px;
+    }
+    .msg {
+      max-width: 85%;
+      padding: 11px 13px;
+      border-radius: 14px;
+      line-height: 1.42;
+      font-size: 14px;
+      border: 1px solid #e6ebf0;
+      white-space: pre-wrap;
+    }
+    .assistant { background: var(--assistant); justify-self: start; }
+    .user { background: var(--user); justify-self: end; }
+    .composer {
+      border-top: 1px solid var(--line);
+      padding: 12px;
+      display: grid;
+      gap: 8px;
+      background: #ffffffd9;
+    }
+    .row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+    }
+    input, select, button {
+      width: 100%;
+      border-radius: 10px;
+      border: 1px solid #d4dbe3;
+      padding: 11px;
+      font-size: 14px;
+    }
     button {
       background: var(--brand);
       color: #fff;
       border: none;
       font-weight: 700;
       cursor: pointer;
+      padding-inline: 18px;
     }
+    button:hover { background: var(--brand-2); }
+    .hint { font-size: 12px; color: #6b7280; margin: 0; }
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+    .chip {
+      border: 1px solid #c8d3dd;
+      background: #fff;
+      color: #1f2937;
+      border-radius: 999px;
+      padding: 7px 11px;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    .hidden-form { display: none; }
     @media (max-width: 760px) {
-      form { grid-template-columns: 1fr; }
+      .chat { height: 58vh; }
+      .msg { max-width: 92%; }
     }
   </style>
 </head>
 <body>
-  <section class="card">
-    <h1>벼락치기 한계 계산기</h1>
-    <p>최대 미루기 일수와 리스크를 계산하고, 현실적인 단기 플랜을 제안합니다.</p>
+  <section class="shell">
+    <header class="head">
+      <h1 class="title">벼락치기 한계 계산기</h1>
+      <p class="sub">질문에 답하면, 내가 얼마나 미룰 수 있는지 계산해줄게.</p>
+    </header>
 
-    <form action="/analyze" method="post">
-      <div>
-        <label>시험 이름</label>
-        <input name="exam_name" placeholder="TOEIC / JLPT N2 / 한국사" required />
+    <div id="chat" class="chat"></div>
+
+    <div class="composer">
+      <div id="chips" class="chips"></div>
+      <div class="row">
+        <input id="answerInput" placeholder="여기에 답변 입력" autocomplete="off" />
+        <button id="nextBtn" type="button">다음</button>
       </div>
-      <div>
-        <label>시험 날짜</label>
-        <input type="date" name="exam_date" required />
-      </div>
-      <div>
-        <label>현재 점수(또는 등급 수치화)</label>
-        <input type="number" step="0.1" name="baseline_score" value="50" required />
-      </div>
-      <div>
-        <label>목표 점수(또는 목표 수치)</label>
-        <input type="number" step="0.1" name="target_score" value="80" required />
-      </div>
-      <div>
-        <label>현재 진도율(%)</label>
-        <input type="number" step="1" min="0" max="100" name="progress_pct" value="30" required />
-      </div>
-      <div>
-        <label>평일 하루 공부 가능 시간</label>
-        <input type="number" step="0.5" name="weekday_hours" value="2" required />
-      </div>
-      <div>
-        <label>주말 하루 공부 가능 시간</label>
-        <input type="number" step="0.5" name="weekend_hours" value="4" required />
-      </div>
-      <div>
-        <label>벼락치기 내성(1 낮음 ~ 5 높음)</label>
-        <select name="cram_tolerance">
-          <option value="1">1</option>
-          <option value="2">2</option>
-          <option value="3" selected>3</option>
-          <option value="4">4</option>
-          <option value="5">5</option>
-        </select>
-      </div>
-      <div class="full">
-        <button type="submit">미루기 한계 계산하기</button>
-      </div>
+      <p id="hint" class="hint"></p>
+    </div>
+
+    <form id="hiddenForm" class="hidden-form" action="/analyze" method="post">
+      <input name="exam_name" />
+      <input name="exam_date" />
+      <input name="baseline_score" />
+      <input name="target_score" />
+      <input name="progress_pct" />
+      <input name="weekday_hours" />
+      <input name="weekend_hours" />
+      <input name="cram_tolerance" />
     </form>
   </section>
+
+  <script>
+    const steps = [
+      { key: "exam_name", q: "어떤 시험 준비 중이야?", hint: "예: TOEIC, JLPT N2, 한국사능력검정시험" },
+      { key: "exam_date", q: "시험 날짜는 언제야?", hint: "형식: YYYY-MM-DD", placeholder: "2026-09-15" },
+      { key: "baseline_score", q: "현재 점수(또는 체감 실력 수치)는 어느 정도야?", hint: "숫자로 입력해줘. 예: 550", chips: ["450", "550", "650"] },
+      { key: "target_score", q: "목표 점수는 몇 점이야?", hint: "숫자로 입력해줘. 예: 750", chips: ["700", "800", "850"] },
+      { key: "progress_pct", q: "전체 진도율은 몇 % 정도야?", hint: "0~100 사이 숫자", chips: ["20", "40", "60"] },
+      { key: "weekday_hours", q: "평일 하루 공부 가능 시간은?", hint: "시간 단위 숫자. 예: 2", chips: ["1.5", "2", "3"] },
+      { key: "weekend_hours", q: "주말 하루 공부 가능 시간은?", hint: "시간 단위 숫자. 예: 4", chips: ["3", "4", "6"] },
+      { key: "cram_tolerance", q: "벼락치기 내성은 1~5 중 몇이야?", hint: "1=체력/집중 낮음, 5=높음", chips: ["1", "2", "3", "4", "5"] }
+    ];
+
+    const answers = {};
+    let idx = 0;
+
+    const chat = document.getElementById("chat");
+    const input = document.getElementById("answerInput");
+    const nextBtn = document.getElementById("nextBtn");
+    const hint = document.getElementById("hint");
+    const chips = document.getElementById("chips");
+    const hiddenForm = document.getElementById("hiddenForm");
+
+    function addMsg(role, text) {
+      const el = document.createElement("div");
+      el.className = `msg ${role}`;
+      el.textContent = text;
+      chat.appendChild(el);
+      chat.scrollTop = chat.scrollHeight;
+    }
+
+    function renderStep() {
+      if (idx >= steps.length) {
+        addMsg("assistant", "좋아, 계산하러 갈게.");
+        for (const step of steps) {
+          hiddenForm.elements[step.key].value = answers[step.key];
+        }
+        hiddenForm.submit();
+        return;
+      }
+
+      const step = steps[idx];
+      addMsg("assistant", step.q);
+      hint.textContent = step.hint || "";
+      input.value = "";
+      input.placeholder = step.placeholder || "답변 입력";
+      renderChips(step.chips || []);
+      input.focus();
+    }
+
+    function renderChips(values) {
+      chips.innerHTML = "";
+      for (const value of values) {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = "chip";
+        b.textContent = value;
+        b.onclick = () => {
+          input.value = value;
+          submitCurrent();
+        };
+        chips.appendChild(b);
+      }
+    }
+
+    function valid(step, value) {
+      if (!value) return false;
+      if (["baseline_score", "target_score", "progress_pct", "weekday_hours", "weekend_hours", "cram_tolerance"].includes(step.key)) {
+        return !Number.isNaN(Number(value));
+      }
+      if (step.key === "exam_date") {
+        return /^\d{4}-\d{2}-\d{2}$/.test(value);
+      }
+      return true;
+    }
+
+    function submitCurrent() {
+      const step = steps[idx];
+      const value = input.value.trim();
+      if (!valid(step, value)) {
+        addMsg("assistant", "입력 형식을 한 번만 다시 확인해줘.");
+        return;
+      }
+
+      answers[step.key] = value;
+      addMsg("user", value);
+      idx += 1;
+      renderStep();
+    }
+
+    nextBtn.addEventListener("click", submitCurrent);
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        submitCurrent();
+      }
+    });
+
+    addMsg("assistant", "안녕, 네 상황을 짧게 물어보고 바로 계산해볼게.");
+    renderStep();
+  </script>
 </body>
 </html>

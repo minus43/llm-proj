@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Iterable, List, Dict, Any
-from urllib.parse import urljoin, urlparse
+from urllib.parse import quote_plus, urljoin, urlparse
 from urllib.robotparser import RobotFileParser
 
 import requests
@@ -18,8 +18,9 @@ USER_AGENT = "DelayPlannerBot/0.2 (+local-rag-project)"
 HEADERS = {"User-Agent": USER_AGENT}
 TIMEOUT_SEC = 20
 SLEEP_SEC = 0.6
-MAX_PAGES_PER_SEED = 12
+MAX_PAGES_PER_SEED = 4
 MIN_TEXT_LEN = 250
+MAX_DOCS_PER_EXAM = 1
 
 # Heuristic filters for community-style 후기 data
 AD_KEYWORDS = [
@@ -42,7 +43,26 @@ class Seed:
 
 def load_seeds(path: str) -> List[Seed]:
     items = json.loads(Path(path).read_text(encoding="utf-8"))
-    return [Seed(exam=x["exam"], urls=x["urls"]) for x in items]
+    seeds: List[Seed] = []
+    for x in items:
+        exam = x["exam"]
+        urls = list(x["urls"])
+        # Expand search scope to Naver Blog without editing every seed manually.
+        q1 = quote_plus(f"{exam} 후기")
+        q2 = quote_plus(f"{exam} 공부법")
+        naver_urls = [
+            f"https://search.naver.com/search.naver?where=blog&query={q1}",
+            f"https://search.naver.com/search.naver?where=blog&query={q2}",
+        ]
+        merged_urls = []
+        for nu in naver_urls:
+            if nu not in merged_urls:
+                merged_urls.append(nu)
+        for u in urls:
+            if u not in merged_urls:
+                merged_urls.append(u)
+        seeds.append(Seed(exam=exam, urls=merged_urls))
+    return seeds
 
 
 def robots_parser(url: str) -> RobotFileParser:
@@ -71,6 +91,8 @@ def same_host(base: str, href: str) -> bool:
         return True
     # Allow traversing across tistory family hosts from tistory search seed pages.
     if "tistory.com" in base_host and "tistory.com" in href_host:
+        return True
+    if "naver.com" in base_host and "naver.com" in href_host:
         return True
     return False
 
@@ -116,6 +138,8 @@ def is_candidate_article_url(url: str) -> bool:
         return False
     if "tistory.com" in urlparse(url).netloc.lower():
         return ("/entry/" in u) or re.search(r"/\\d+$", u) is not None
+    if "blog.naver.com" in urlparse(url).netloc.lower():
+        return ("/postview.naver" in u) or re.search(r"blog\.naver\.com/[^/]+/\d+", u) is not None
     return True
 
 
@@ -225,6 +249,7 @@ def dedupe_cases(cases: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
 
 def crawl_seed(seed: Seed) -> Iterable[Dict[str, Any]]:
     robots_cache: Dict[str, RobotFileParser] = {}
+    collected = 0
 
     def get_rp(u: str) -> RobotFileParser:
         host = urlparse(u).netloc.lower()
@@ -233,10 +258,14 @@ def crawl_seed(seed: Seed) -> Iterable[Dict[str, Any]]:
         return robots_cache[host]
 
     for seed_url in seed.urls:
+        if collected >= MAX_DOCS_PER_EXAM:
+            break
         queue = [seed_url]
         visited = set()
 
         while queue and len(visited) < MAX_PAGES_PER_SEED:
+            if collected >= MAX_DOCS_PER_EXAM:
+                break
             url = queue.pop(0)
             if url in visited:
                 continue
@@ -260,10 +289,16 @@ def crawl_seed(seed: Seed) -> Iterable[Dict[str, Any]]:
             if len(text) >= MIN_TEXT_LEN:
                 case = to_case(seed, url, title, text)
                 # Keep docs that look review-like and not ad-like
-                if (not case["quality"]["is_ad_like"]) and case["quality"]["quality_score"] >= 0.12:
+                if (
+                    (not case["quality"]["is_ad_like"])
+                    and case["quality"]["quality_score"] >= 0.12
+                ):
                     yield case
+                    collected += 1
+                    if collected >= MAX_DOCS_PER_EXAM:
+                        break
 
-            for link in discover_links(url, resp.text)[:30]:
+            for link in discover_links(url, resp.text)[:15]:
                 if not is_candidate_article_url(link):
                     continue
                 if link not in visited and link not in queue:

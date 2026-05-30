@@ -1,7 +1,9 @@
 from datetime import date, datetime
 import os
 from pathlib import Path
+import re
 from typing import Dict, Any
+from datetime import timedelta
 
 import requests
 from requests.exceptions import Timeout, RequestException
@@ -61,6 +63,120 @@ def llm_brief_advice(user_context: Dict[str, Any], retrieval_context: str) -> st
         return f"LLM 조언 생성 실패(기타): {exc}"
 
 
+def _first_number(text: str) -> float | None:
+    m = re.search(r"(\d+(?:\.\d+)?)", text)
+    if not m:
+        return None
+    try:
+        return float(m.group(1))
+    except ValueError:
+        return None
+
+
+def parse_exam_date(text: str, today: date) -> date:
+    t = (text or "").strip()
+    try:
+        return datetime.strptime(t, "%Y-%m-%d").date()
+    except ValueError:
+        pass
+
+    low = t.lower()
+    num = _first_number(low)
+    if num is not None:
+        if "일" in low and "뒤" in low:
+            return today + timedelta(days=int(num))
+        if "주" in low and "뒤" in low:
+            return today + timedelta(days=int(num * 7))
+        if ("달" in low or "개월" in low) and "뒤" in low:
+            return today + timedelta(days=int(num * 30))
+
+    if "다음주" in t:
+        return today + timedelta(days=7)
+    if "이번주" in t:
+        return today + timedelta(days=4)
+    if "다음달" in t:
+        return today + timedelta(days=30)
+
+    # Safe default when date expression is unclear.
+    return today + timedelta(days=30)
+
+
+def parse_baseline_score(text: str) -> float:
+    num = _first_number(text)
+    if num is not None:
+        return num
+    t = text.lower()
+    if any(k in t for k in ["처음", "노베", "기초", "거의 몰라"]):
+        return 35.0
+    if any(k in t for k in ["중간", "보통", "무난", "기본은"]):
+        return 55.0
+    if any(k in t for k in ["잘해", "상위", "고수", "꽤"]):
+        return 72.0
+    return 50.0
+
+
+def parse_target_score(text: str, baseline: float) -> float:
+    num = _first_number(text)
+    if num is not None:
+        return num
+    t = text.lower()
+    if any(k in t for k in ["합격만", "합격권", "커트라인"]):
+        return baseline + 15.0
+    if any(k in t for k in ["무난", "안정권"]):
+        return baseline + 25.0
+    if any(k in t for k in ["고득점", "상위", "높게", "빡세게"]):
+        return baseline + 35.0
+    if any(k in t for k in ["만점", "최고점"]):
+        return baseline + 45.0
+    return baseline + 25.0
+
+
+def parse_progress_pct(text: str) -> float:
+    num = _first_number(text)
+    if num is not None:
+        return max(0.0, min(100.0, num))
+    t = text.lower()
+    if any(k in t for k in ["아직", "거의 안", "시작 전"]):
+        return 10.0
+    if any(k in t for k in ["조금", "초반", "1회독 전"]):
+        return 25.0
+    if any(k in t for k in ["절반", "반", "중간"]):
+        return 50.0
+    if any(k in t for k in ["거의 끝", "막바지", "2회독"]):
+        return 75.0
+    return 35.0
+
+
+def parse_daily_hours(text: str, weekend: bool = False) -> float:
+    num = _first_number(text)
+    if num is not None:
+        return max(0.5, num)
+    t = text.lower()
+    if any(k in t for k in ["거의 못", "바빠", "시간 없음"]):
+        return 0.8 if not weekend else 1.5
+    if any(k in t for k in ["짧게", "1~2", "조금"]):
+        return 1.5 if not weekend else 2.5
+    if any(k in t for k in ["보통", "2~3", "꾸준"]):
+        return 2.5 if not weekend else 4.0
+    if any(k in t for k in ["많이", "집중", "몰아서", "빡세게"]):
+        return 4.0 if not weekend else 6.0
+    return 2.0 if not weekend else 3.5
+
+
+def parse_cram_tolerance(text: str) -> int:
+    num = _first_number(text)
+    if num is not None:
+        return int(max(1, min(5, round(num))))
+    t = text.lower()
+    if any(k in t for k in ["체력 약", "금방 지쳐", "집중 안", "야근 많아"]):
+        return 2
+    if any(k in t for k in ["보통", "무난", "적당"]):
+        return 3
+    if any(k in t for k in ["버틸 수", "빡세게 가능", "몰입 잘", "강행"]):
+        return 4
+    return 3
+
+
 @app.get("/")
 def index():
     return render_template("index.html")
@@ -69,19 +185,20 @@ def index():
 @app.post("/analyze")
 def analyze():
     exam_name = request.form["exam_name"]
-    exam_date = datetime.strptime(request.form["exam_date"], "%Y-%m-%d").date()
+    today = date.today()
+    exam_date = parse_exam_date(request.form["exam_date"], today)
 
-    baseline_score = float(request.form["baseline_score"])
-    target_score = float(request.form["target_score"])
-    progress_pct = float(request.form["progress_pct"])
-    weekday_hours = float(request.form["weekday_hours"])
-    weekend_hours = float(request.form["weekend_hours"])
-    cram_tolerance = int(request.form["cram_tolerance"])
+    baseline_score = parse_baseline_score(request.form["baseline_score"])
+    target_score = parse_target_score(request.form["target_score"], baseline_score)
+    progress_pct = parse_progress_pct(request.form["progress_pct"])
+    weekday_hours = parse_daily_hours(request.form["weekday_hours"], weekend=False)
+    weekend_hours = parse_daily_hours(request.form["weekend_hours"], weekend=True)
+    cram_tolerance = parse_cram_tolerance(request.form["cram_tolerance"])
 
     inp = PlannerInput(
         exam_name=exam_name,
         exam_date=exam_date,
-        today=date.today(),
+        today=today,
         baseline_score=baseline_score,
         target_score=target_score,
         progress_pct=progress_pct,

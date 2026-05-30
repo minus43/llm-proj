@@ -155,13 +155,13 @@
   <script>
     const steps = [
       { key: "exam_name", q: "어떤 시험 준비 중이야?", hint: "예: TOEIC, JLPT N2, 한국사능력검정시험" },
-      { key: "exam_date", q: "시험 날짜는 언제야?", hint: "형식: YYYY-MM-DD", placeholder: "2026-09-15" },
-      { key: "baseline_score", q: "현재 점수(또는 체감 실력 수치)는 어느 정도야?", hint: "숫자로 입력해줘. 예: 550", chips: ["450", "550", "650"] },
-      { key: "target_score", q: "목표 점수는 몇 점이야?", hint: "숫자로 입력해줘. 예: 750", chips: ["700", "800", "850"] },
-      { key: "progress_pct", q: "전체 진도율은 몇 % 정도야?", hint: "0~100 사이 숫자", chips: ["20", "40", "60"] },
-      { key: "weekday_hours", q: "평일 하루 공부 가능 시간은?", hint: "시간 단위 숫자. 예: 2", chips: ["1.5", "2", "3"] },
-      { key: "weekend_hours", q: "주말 하루 공부 가능 시간은?", hint: "시간 단위 숫자. 예: 4", chips: ["3", "4", "6"] },
-      { key: "cram_tolerance", q: "벼락치기 내성은 1~5 중 몇이야?", hint: "1=체력/집중 낮음, 5=높음", chips: ["1", "2", "3", "4", "5"] }
+      { key: "exam_date", q: "시험 시점은 언제쯤이야?", hint: "예: 3주 뒤 / 다음달 말 / 2026-09-15", placeholder: "예: 3주 뒤" },
+      { key: "baseline_score", q: "지금 실력은 어느 정도라고 느껴?", hint: "숫자 없이 설명해도 돼", chips: ["거의 처음이야", "기본은 있는데 약해", "중간 이상은 돼"] },
+      { key: "target_score", q: "목표 수준은 어느 정도야?", hint: "예: 합격권 / 안정권 / 고득점", chips: ["합격만 하면 돼", "안정권까지 가고 싶어", "고득점 노릴래"] },
+      { key: "progress_pct", q: "현재 공부 진행 상태는 어때?", hint: "진도 체감으로 말해줘", chips: ["아직 거의 시작 전", "조금씩 하고 있어", "절반 넘게 했어"] },
+      { key: "weekday_hours", q: "평일엔 보통 어느 정도 공부할 수 있어?", hint: "예: 짧게 / 2~3시간 정도 / 많이", chips: ["짧게만 가능", "2~3시간은 가능", "꽤 많이 가능"] },
+      { key: "weekend_hours", q: "주말엔 어느 정도 가능해?", hint: "예: 평일보다 조금 더 / 몰아서 가능", chips: ["평일이랑 비슷", "평일보다 조금 더", "주말엔 몰아서 가능"] },
+      { key: "cram_tolerance", q: "마감 직전에 몰입하는 스타일이야?", hint: "체력/집중 기준으로 편하게 말해줘", chips: ["금방 지치는 편", "보통", "몰입하면 버티는 편"] }
     ];
 
     const answers = {};
@@ -218,12 +218,6 @@
 
     function valid(step, value) {
       if (!value) return false;
-      if (["baseline_score", "target_score", "progress_pct", "weekday_hours", "weekend_hours", "cram_tolerance"].includes(step.key)) {
-        return !Number.isNaN(Number(value));
-      }
-      if (step.key === "exam_date") {
-        return /^\d{4}-\d{2}-\d{2}$/.test(value);
-      }
       return true;
     }
 

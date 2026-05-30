@@ -61,13 +61,16 @@
       gap: 10px;
     }
     .msg {
-      max-width: 85%;
+      max-width: min(78%, 620px);
+      width: fit-content;
       padding: 11px 13px;
       border-radius: 14px;
       line-height: 1.42;
       font-size: 14px;
       border: 1px solid #e6ebf0;
       white-space: pre-wrap;
+      word-break: keep-all;
+      overflow-wrap: anywhere;
     }
     .assistant { background: var(--assistant); justify-self: start; }
     .user { background: var(--user); justify-self: end; }
@@ -113,7 +116,7 @@
     .hidden-form { display: none; }
     @media (max-width: 760px) {
       .chat { height: 58vh; }
-      .msg { max-width: 92%; }
+      .msg { max-width: 94%; }
     }
   </style>
 </head>
